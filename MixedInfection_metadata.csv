@@ -1,0 +1,9 @@
+meaning of each row,Each line in MixedInfection.csv represents one individual Drosophila egg
+,
+Host,"Code for Drosophila host species (BIR: birchii, BIP: bipectinata, PSA: pseudoananassae, PST: pseudotakahashii, PAL: pallidifrons, RUB: rubida, SUL: sulfurigaster)"
+Parasitoid,"Code for parasitoid treatment (M: mixed treatment of Asobara, Ganaspis and Leptopilina)"
+Temp,Temperature (°C) treatment
+Rep,Replicate number
+Individuals,Individual identifier within a given vial
+HPD,"Individual indentity (H: host, P: parasitoid, D: dead)"
+Ptoid,"Code of parasitoid that hatched (MA: Asobara sp., MG: Ganaspis sp., ML: Leptopilina sp.)"

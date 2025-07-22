@@ -1,0 +1,10 @@
+meaning of each row,Each line in IndividualData.csv represents one individual Drosophila egg
+,
+row number,The row number is thus a unique identifier for each individual.
+Host,"Code for Drosophila host species (BIR: birchii, BIP: bipectinata, PSA: pseudoananassae, PST: pseudotakahashii, PAL: pallidifrons, RUB: rubida, SUL: sulfurigaster)"
+Parasitoid,"Code for parasitoid species (A: Asobara sp., G: Ganaspis sp., L: Leptopilina sp., D: Trichopria sp., C: unparasitized control)"
+Temp,Temperature (°C) treatment
+Rep,Replicate number
+Individuals,Individual identifier within a given vial
+HPD,"Outcome of each individual egg (H: host hatched, P: parasitoid hatched, D: dead - the host died and if infected then also the parasitoid died)"
+Vial,Vial number. Indicates which eggs shared the same vial.

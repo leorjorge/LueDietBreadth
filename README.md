@@ -1,5 +1,7 @@
 ## Lue et al. Warming, parasitoid success and diet breadth
 
+[![DOI](https://zenodo.org/badge/1021436528.svg)](https://doi.org/10.5281/zenodo.16317124)
+
 Data and analysis scripts for the manuscript Lue et al. 2025 *Warming reduces parasitoid success and narrows their diet breadth*.
 
 Using these data and scripts, we investigated how success of consumer and resource species development, consumer diet breadth and redundancy of top-down control are impacted by experimental warming and cooling. We measured the outcomes of 28 interactions involving *Drosophila* species and their parasitoids within a tropical rainforest food web at ambient (24°C), warming (28°C), and cooling (20°C) temperatures. The interactions involved seven *Drosophila* host species, three larval parasitoids, and one pupal parasitoid. We used 50 *Drosophila* eggs per vial, the vials served as replicates. We also measured outcome of control vials unexposed to parasitoids.

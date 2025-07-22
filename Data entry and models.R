@@ -22,7 +22,7 @@ theme_set(theme_classic())
 
 
 # Data entry ####
-d.long <- read.csv("allIN_Vials_Clean.csv", row.names = 1)[,-c(8:10)]
+d.long <- read.csv("IndividualData.csv", row.names = 1)
 d <- aggregate(HPD~Vial, data = d.long, FUN = function(x) sum (x == "P"))
 colnames(d)[2] <- "P"
 d$H <- aggregate(HPD~Vial, data = d.long, FUN = function(x) sum (x == "H"))$HPD
@@ -40,7 +40,7 @@ d$SP <- d$P/d$HcM
 d$DI <- (d$HcM-d$H)/d$HcM
 
 # Multi-parasitoid experiment
-d.multi <- read.csv("Mix_ptoid_treatment.csv") 
+d.multi <- read.csv("MixedInfection.csv") 
 d.multi.A <- aggregate(Ptoid~Rep+Host+Parasitoid+Temp, 
                        data = d.multi, FUN = function(x) sum (x == "MA"))
 colnames(d.multi.A)[5] <- "P"

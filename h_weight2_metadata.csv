@@ -1,0 +1,9 @@
+meaning of each row,Each line in h_weight 2.csv represents one individual Drosophila adult that had its dry mass measured
+,
+Host,"Code for Drosophila host species (BIR: birchii, BIP: bipectinata, PSA: pseudoananassae, PST: pseudotakahashii, PAL: pallidifrons, RUB: rubida, SUL: sulfurigaster)"
+Parasitoid,"Code for parasitoid species (A: Asobara sp., G: Ganaspis sp., L: Leptopilina sp., D: Trichopria sp., C: unparasitized control, M: multiple infection)"
+Temp,Temperature (°C) treatment
+H/P,"Whether Host or parasitoid. All entries are hosts here, represented by H"
+Sex,"Sex of the fly. Only females were measured, all entries are represented by F"
+individual,"Sequential number of measured individual, for each Host/Parasitoid/Temperature combination"
+body_weight,"Dry body mass of each fly, measured in mg."

@@ -533,3 +533,115 @@ contrast(contrast(emm.encap.pupal, method = "trt.vs.ctrl", by = "Temp", exclude 
 emm.encap.notemp.pupal <- emmeans(mod.encap.pupal, ~ Parasitoid, type = "response", re_formula = NULL)
 contrast(emm.encap.notemp.pupal, method = "trt.vs.ctrl")
 
+# Body mass analysis ####
+##For flies: differences between parasitoid (and control), host, temperature.
+## For parasitoids: Same factors, there is no control.
+# Are hosts and parasitoids smaller at 28?
+# Do larger parasitoids emerge from larger flies? - separate analysis
+# Do flies attacked by different parasitoids (and control) have different mass?
+
+Par.Wt <- read.csv("data_DB_Pweight.csv")
+Par.Wt  <-  Par.Wt |> 
+   dplyr::filter(body_weight > 0 & Treat == "N") |> 
+   dplyr::select(!c(Treat, Sex)) |> 
+   mutate(body_weight = body_weight*10)
+Par.Wt$Temp <- as.factor(Par.Wt$Temp)
+Par.Wt$Host.Ph <- Par.Wt$Host
+
+Fly.Wt <- read.csv("h_weight 2.csv")
+Fly.Wt  <-  Fly.Wt |> 
+   dplyr::filter(body_weight > 0 & Parasitoid != "M") |> 
+   dplyr::select(!c(H.P, Sex)) |> 
+   mutate(body_weight = body_weight*10)
+Fly.Wt$Temp <- as.factor(Fly.Wt$Temp)
+Fly.Wt$Host.Ph <- Fly.Wt$Host
+
+
+Mod.Par.Wt <- brm(body_weight ~ Temp + (1 + Temp + Parasitoid|Host) + (1 + Temp|Parasitoid),
+                  family = gaussian(),data = Par.Wt, 
+                  chains = 8,iter = 2250, warmup = 1000, 
+                  control = list(adapt_delta = 0.99, max_treedepth = 20),
+                  save_pars = save_pars(all = T))
+
+EMM.Par.Wt.par <- emmeans(Mod.Par.Wt, ~Parasitoid|Host+Temp, re_formula = NULL)
+contrast(EMM.Par.Wt.par, method = "pairwise")
+plot(EMM.Par.Wt.par)
+EMM.Par.Wt.temp <- emmeans(Mod.Par.Wt, ~Temp|Host+Parasitoid, re_formula = NULL)
+Contrast.Par.Wt.temp <- summary(contrast(EMM.Par.Wt.temp, method = "trt.vs.ctrl", ref = 2))
+plot(EMM.Par.Wt.temp)
+
+Mod.Fly.Wt <- brm(body_weight ~ Temp + (1 + Temp + Parasitoid|Host) + (1 + Temp|Parasitoid),
+                  family = gaussian(),data = Fly.Wt, 
+                  chains = 8,iter = 2250, warmup = 1000, 
+                  control = list(adapt_delta = 0.99, max_treedepth = 20),
+                  save_pars = save_pars(all = T))
+
+EMM.Fly.Wt.par <- emmeans(Mod.Fly.Wt, ~Parasitoid|Temp+Host, re_formula = NULL)
+Contrast.Fly.Wt.par <- summary(contrast(EMM.Fly.Wt.par, method = "trt.vs.ctrl", ref = 2)) |> 
+  mutate(Host = fct_relevel(Host, "RUB", "SUL", "PAL", "BIP", "PSA", "PST", "BIR"),
+         Parasitoid = rep(c("A", "T", "G", "L"), 21),
+         estimate = estimate/10,
+         lower.HPD = lower.HPD/10,
+         upper.HPD = upper.HPD/10)
+
+EMM.Fly.Wt.temp <- emmeans(Mod.Fly.Wt, ~Temp|Host+Parasitoid, re_formula = NULL)
+Contrast.Fly.Wt.temp <- summary(contrast(EMM.Fly.Wt.temp, method = "trt.vs.ctrl", ref = 2))
+plot(EMM.Fly.Wt.temp)
+
+plot(contrast(EMM.Fly.Wt.par, method = "trt.vs.ctrl", ref = 2))
+Fly.wt.mean <- Fly.Wt |> 
+   dplyr::filter(Parasitoid == "C") |> 
+   group_by(Temp, Host) |> 
+   summarise(fly_weight = mean(body_weight))
+ParFly.Wt <- left_join(Par.Wt, Fly.wt.mean, by = join_by(Temp, Host)) |> 
+   dplyr::filter(Temp == "24") |> 
+   mutate(Parasitoid = fct_recode(Parasitoid, T = "D"))
+
+Mod.Par.Fly.wt <- brm(body_weight ~ fly_weight + (1|Host) + (1 + fly_weight|Parasitoid),
+                      family = gaussian(),data = ParFly.Wt, 
+                      chains = 8,iter = 2250, warmup = 1000, 
+                      control = list(adapt_delta = 0.99, max_treedepth = 20),
+                      save_pars = save_pars(all = T))
+
+ParFly.Wt.pred <- ParFly.Wt |> 
+   group_by(Host, Parasitoid) |> 
+   modelr::data_grid(fly_weight = modelr::seq_range(fly_weight, n = 101)) |> 
+   add_epred_draws(Mod.Par.Fly.wt)
+## Heatmap similar to control performance for control fly weight (S10) and contrasts between temperatures (S11)
+## (Figs 2 and S2) + model summary table
+## Contrasts between parasitized and control flies across all hosts, parasitoids and temperatures (S12)
+
+## Difference between temperatures for both flies and parasitoids - contrast plots. For -parasitoids- both,
+## filter by cases where there are actual individuals measured  (S13)
+
+## Weight of parasitoid vs. weight of fly for each parasitoid. (S14)
+
+Fly.wt.rawcontr <- Fly.Wt |> 
+   group_by(Temp, Host, Parasitoid) |> 
+   summarise(fly_weight = mean(body_weight)) |> 
+   pivot_wider(names_from = Parasitoid, values_from = fly_weight) |> 
+   mutate(Host = factor(Host, levels = rev(c("BIR", "PST", "PSA", "BIP", "PAL", "SUL", "RUB")))) |> 
+   mutate(A.c = A-C,
+          D.c = D-C,
+          G.c = G-C,
+          L.c = G-C) |> 
+   select(!A:L) |> 
+   pivot_longer(cols = A.c:L.c, names_to = "Parasitoid", values_to = "contrast")
+
+ggplot(Fly.wt.rawcontr, mapping = aes(x = Parasitoid, y = contrast, colour = Host)) + 
+   geom_point(position = position_dodge(width = 0.9)) + 
+   geom_hline(yintercept = 0, linetype = 3) +
+   facet_wrap(~Temp, axes = "all_y") + 
+   labs(y = "body mass difference") +
+   theme(strip.background = element_blank(),
+         strip.text = element_text(size = 14),
+         axis.text = element_text(size = 14),
+         legend.text = element_text(size = 14),
+         axis.title = element_text(size = 16))
+
+#### Fix the body mass back to mg (and add to labels)
+#### Parasitoid change D -> T
+#### Fix legend in S13
+#### Tables with model summaries
+#### Update Zenodo with data and scripts
+

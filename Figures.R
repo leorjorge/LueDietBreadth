@@ -324,7 +324,114 @@ S8_multi <- S8_multi.A / S8_multi.G / S8_multi.L + plot_layout(guides = "collect
    theme(legend.position='bottom')
 ggsave("S8_multi.svg", plot = S8_multi, height = 10, width = 4.5)
 
-# Fig. S9 Encapsulation ####
+
+# Fig. S9 Control fly weight ####
+
+Ctrl_weight_Heatmap <- Fly.Wt |> 
+   dplyr::filter(Parasitoid == "C") |> 
+   mutate(Host = factor(Host, levels = c("BIR", "PST", "PSA", "BIP", "PAL", "SUL", "RUB"))) |> 
+   group_by(Host, Temp) |> 
+   summarise(body_weight = mean(body_weight/10)) |> 
+   mutate(Temp = factor(Temp, levels = c(20,24,28))) |> 
+   ungroup() |> 
+   ggplot(mapping = aes(x = Temp, y = Host, fill = body_weight))+
+   scale_x_discrete(expand = c(0, 0)) + 
+   scale_y_discrete(NULL, expand = c(0, 0)) + 
+   geom_tile(color = "black", linewidth = 0.5) +
+   coord_fixed() + 
+   scale_fill_continuous_sequential(palette = "Purples 2") +
+   labs(x = "temperature", fill = "body mass (mg)") +
+   theme(legend.position = "right",
+         axis.text.x = element_text(size = 14),
+         axis.text.y = element_blank(),
+         axis.title = element_text(size = 16))
+ggsave("FigS9_Control_weightHeatmap.svg", plot = Ctrl_weight_Heatmap)
+
+#Fig. S10 Control fly weight contrasts ####
+Contrast_Control_weight <- summary(contrast(EMM.Fly.Wt.temp, method = 'trt.vs.ctrl',, ref = 2)) |> 
+   mutate(Host = factor(Host, levels = rev(c("BIR", "PST", "PSA", "BIP", "PAL", "SUL", "RUB"))),
+          estimate = estimate/10,
+          lower.HPD = lower.HPD/10,
+          upper.HPD = upper.HPD/10) |> 
+   dplyr::filter(Parasitoid == "C") |> 
+   dplyr::filter(!(Host == "PST" & contrast == "Temp28 - Temp24"))
+
+S10_Ctrl_weight <- ggplot(data = Contrast_Control_weight, mapping = aes(x = Host, y = estimate)) + 
+   geom_point()+
+   geom_errorbar(aes(ymin = lower.HPD, ymax = upper.HPD)) +
+   geom_hline(yintercept = 0, linetype = 3) +
+   facet_wrap(~contrast, axes = "all_y") + 
+   scale_x_discrete(labels = c(BIR = "*D. birchii*", 
+                               PST = "*D. pseudotakahashii*" , 
+                               PSA = "*D. pseudoananassae*", 
+                               BIP = "*D. bipectinata*", 
+                               PAL = "*D. pallidifrons*", 
+                               SUL = "*D. sulfurigaster*", 
+                               RUB = "*D. rubida*")) +
+   labs(y = "body mass difference (mg)") +
+   theme(strip.background = element_blank(),
+         strip.text = element_text(size = 14),
+         axis.text = element_text(size = 14),
+         legend.text = element_text(size = 14),
+         axis.title = element_text(size = 16),
+         axis.text.x =  ggtext::element_markdown(angle = 45, vjust = 1, hjust = 1))
+ggsave("FigS10_Control_weight.svg", S10_Ctrl_weight, width = 9, height = 4.5)
+
+# Fig. S11 Fly-Parasitoid mass correlation ####
+
+S11_ParFlyWt <- ParFly.Wt.pred |> 
+   mutate(Parasitoid = factor(Parasitoid, levels = c("A", "G", "L", "D"), labels = c("A", "G", "L", "T")),
+          .epred = .epred/10) |> 
+   ggplot(mapping = aes(x = fly_weight/10, y = body_weight/10, color = Parasitoid, fill = Parasitoid)) +
+   stat_lineribbon(aes(y = .epred), .width = c(.95, .68), alpha = 1/5, linewidth = 0.7) +
+   geom_point(data = ParFly.Wt, position = position_jitter(height = 0)) + 
+   labs(x = "host body mass (mg)", y = "parasitoid body mass (mg)") +
+   scale_color_discrete() +
+   scale_fill_discrete() +
+   theme(strip.background = element_blank(),
+         strip.text = element_text(size = 14),
+         axis.text = element_text(size = 14),
+         legend.text = element_text(size = 14),
+         axis.title = element_text(size = 16))
+
+ggsave("S11_parfly_mass.svg", S11_ParFlyWt)
+
+
+# Fig. S12 Temperature differences parasitoids ####
+Par.counts <- Par.Wt |> 
+   count(Host, Parasitoid, Temp, .drop = F) |> 
+   pivot_wider(names_from = Temp, values_from = n) |> 
+   mutate(Temp20 = `20` * `24`,
+          Temp28 = `20` * `28`) |> 
+   select(!c(`20`, `24`, `28`)) |> 
+   pivot_longer(cols = Temp20:Temp28, names_to = "contrast", values_to = "present") |> 
+   mutate(present = present > 0,
+          contrast = paste(contrast, "- Temp24"),
+          Parasitoid = fct_recode(Parasitoid, T = "D"))
+S12_Pars_tempcontrasts <- summary(Contrast.Par.Wt.temp) |> 
+   mutate(Parasitoid = fct_recode(Parasitoid, T = "D"),
+          estimate = estimate/10,
+          lower.HPD = lower.HPD/10,
+          upper.HPD = upper.HPD/10) |> 
+   left_join(Par.counts, by = join_by(Host, Parasitoid, contrast)) |> 
+   dplyr::filter(present == T) |> 
+   mutate(Host = factor(Host, levels = rev(c("BIR", "PST", "PSA", "BIP", "PAL", "SUL", "RUB"))),
+          Parasitoid = fct_relevel(Parasitoid, "A", "G", "L", "T")) |> 
+   ggplot(mapping = aes(x = Parasitoid, y = estimate, colour = Host)) + 
+   geom_point(position = position_dodge(width = 0.9)) +
+   geom_errorbar(aes(ymin = lower.HPD, ymax = upper.HPD), position = position_dodge(width = 0.9)) +
+   geom_hline(yintercept = 0, linetype = 3) +
+   facet_wrap(~contrast, axes = "all_y") + 
+   labs(y = "body mass difference (mg)") +
+   theme(strip.background = element_blank(),
+         strip.text = element_text(size = 14),
+         axis.text = element_text(size = 14),
+         legend.text = element_text(size = 14),
+         axis.title = element_text(size = 16))
+
+ggsave("S12_masschange_temperature.svg", S12_Pars_tempcontrasts)
+
+# Fig. S13 Encapsulation ####
 emm.encap.plot <- as.data.frame(emm.encap) |> 
    dplyr::filter(Parasitoid != "C") |> 
    mutate(Temp = factor(Temp, levels = c("20", "24", "28")),
@@ -342,3 +449,17 @@ encap.plot <- ggplot(emm.encap.plot, aes(x = Parasitoid, y = prob, colour = Temp
         colour = "temperature") +
    coord_cartesian(ylim = c(0, 1))
 ggsave("Encapsulation.svg", plot = encap.plot, width = 6, height = 4)
+
+# Fig. S14 Parasitoid-Control contrasts ####
+S14_fly.wt.par <- ggplot(data = Contrast.Fly.Wt.par, mapping = aes(x = Parasitoid, y = estimate, colour = Host)) + 
+   geom_point(position = position_dodge(width = 0.9))+
+   geom_errorbar(aes(ymin = lower.HPD, ymax = upper.HPD), position = position_dodge(width = 0.9)) +
+   geom_hline(yintercept = 0, linetype = 3) +
+   facet_wrap(~Temp, axes = "all_y") + 
+   labs(y = "body mass difference (mg)") +
+   theme(strip.background = element_blank(),
+         strip.text = element_text(size = 14),
+         axis.text = element_text(size = 14),
+         legend.text = element_text(size = 14),
+         axis.title = element_text(size = 16))
+ggsave("S14_fly_wt_par.svg", S14_fly.wt.par, width = 12, height = 4.5)
